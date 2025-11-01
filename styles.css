@@ -1,0 +1,70 @@
+body{
+	margin:0px;
+}
+.splash, .orisit{
+	background: linear-gradient(rgba(150,100,70), rgba(150,150,130));
+	position: absolute;
+	top:0;
+	left:0;
+	width:100vw;
+	height: 100vh;
+	display: flex;
+	flex-direction: column;
+	align-items: center;
+	justify-content: center;
+	transition: opacity ease-in-out 0.2s;
+	vertical-align: center;
+}
+.splash button{
+	padding: 50px;
+	font-size:5em;
+	border-radius:100px;
+	background: rgba(255,255,255,0.5);
+	backdrop-filter: blur(10px);
+}
+
+button{
+	padding: 10px;
+	border-radius:100px;
+	font-family:system-ui;
+	background: rgba(255,255,255,0.5);
+	backdrop-filter: blur(10px);
+}
+
+.orisit{
+
+}
+
+.oii{
+	overflow:hidden;
+	transition: height ease-in-out 0.2s;
+	text-align: center;
+	font-size:3em;
+	margin-block-start:0px;
+	margin-block-end:0px;
+}
+.orisit button{
+	font-size:0.8em;
+
+}
+.splash{
+	z-index: 999999;
+}
+.orisit{
+	z-index: 999998;
+}
+.app{
+	z-index: 999997;
+}
+.app{
+	background: linear-gradient(rgba(150,100,70), rgba(150,150,130));
+	top:0;
+	left:0;
+	width:100vw;
+	height: 100vh;
+}
+
+*:not(button){
+	color:white;
+	font-family:system-ui;
+}
