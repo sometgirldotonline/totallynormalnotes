@@ -20,7 +20,11 @@
             </select>
             <button onclick="addnote()"><i class="fa-solid fa-plus"></i> Add Note</button>
         </section>
-        <section class="writer"><input id="note-title" type=text><textarea id="note-plaintext" readonly>Select a note to start</textarea></section>
+        <section class="writer"><input id="note-title" type=text>
+            <div id="note-md" contenteditable>
+                <div class="line"></div>
+            </div>
+            <textarea id="note-plaintext" readonly>Select a note to start</textarea></section>
     </div>
     <script src="script-app.js"></script>
 </body>
