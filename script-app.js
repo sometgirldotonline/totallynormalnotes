@@ -3,7 +3,13 @@ setTimeout(()=>{document.querySelector(".splash").style.opacity=0},1000)
 setTimeout(()=>{document.querySelector(".app").style.opacity=1},900)
 setTimeout(()=>{document.querySelector(".splash").remove()},1200)
 const notemd = document.querySelector("#note-md");
-
+const noteplain = document.querySelector("#note-plaintext");
+String.prototype.replaceAt = function(index, replacement) {
+	if(replacement == undefined || replacement == null){
+		return this
+	}
+    return this.substring(0, index) + replacement + this.substring(index + replacement.length);
+}
 function playJumpscare(){
 	if(window.jumpscare !== null && window.jumpscare !== undefined){
 		window.jumpscare.pause()
@@ -108,21 +114,25 @@ async function shownote(id){
 	}
 	title = document.querySelector("#note-title")
 	note = await db.notes.get(id)
-	notemd.value = note.content || ""
+	noteplain.value = note.content || ""
 	title.value = note.title || "Untitled Note"
-	notemd.readOnly = false
+	noteplain.readOnly = false
 	document.title = `Notes - ${note.title}`
 	window.location.hash = id
-	notemd.onkeyup = () => {
-		db.notes.update(id, {content: notemd.value})
+	notemd.innerHTML = decodeMd(noteplain.value)	
+	noteplain.onkeyup = () => {
+		db.notes.update(id, {content: noteplain.value})
+		notemd.innerHTML = decodeMd(noteplain.value)
 	}
-	notemd.oninput = () => {
-		if(Math.floor(Math.random() * 5) + 1 === 1 && notemd.value.length > 0){
-			const lastChar = notemd.value[notemd.value.length - 1]
+	noteplain.oninput = () => {
+		pos = noteplain.selectionStart
+		if(Math.floor(Math.random() * 5) + 1 === 1 && noteplain.value.length > 0){
+			const lastChar = noteplain.value[noteplain.selectionStart-1]
 			const newChar = randomReplace(lastChar, false) || lastChar
-			notemd.value = notemd.value.slice(0, -1) + newChar
+			noteplain.value = noteplain.value.replaceAt(noteplain.selectionStart-1, newChar)
+			noteplain.setSelectionRange(pos, pos)
 		}
-		if(Math.floor(Math.random() * 50) + 1 === 1 && notemd.value.length > 0){
+		if(Math.floor(Math.random() * 50) + 1 === 1 && noteplain.value.length > 0){
 			playJumpscare()
 		}
 
@@ -131,7 +141,7 @@ async function shownote(id){
 }
 
 async function addnote(title = "Untitled Note"){
-	const id = await db.notes.add({title: title, content: "", createdate: Date.now()})
+	const id = await db.notes.add({title: title, content: "# Test of Note.\n", createdate: Date.now()})
 	shownote(id)
 	return id
 }
@@ -152,7 +162,33 @@ listnotes()
 if(window.location.hash !== null){
 	shownote(Number(window.location.hash.replace("#","")))
 }
+function preparseCodeBlocks(md) {
+  const lines = md.split("\n");
+  const result = [];
+  let buffer = [];
+  let insideBlock = false;
 
+  for (const line of lines) {
+    if (line.startsWith("```")) {
+      if (!insideBlock) {
+        insideBlock = true;
+        buffer.push(line.replace(/^```/, "")); // remove starting fence
+      } else {
+        // closing fence
+        insideBlock = false;
+        const code = buffer.join("\n").trim();
+        result.push(`<pre><code>${code}</code></pre>`);
+        buffer = [];
+      }
+    } else if (insideBlock) {
+      buffer.push(line);
+    } else {
+      result.push(line);
+    }
+  }
+
+  return result.join("\n");
+}
 function decodeMd(md) {
   if (typeof md !== "string") return "";
 
@@ -167,195 +203,94 @@ function decodeMd(md) {
   };
 
   const wrappers = [
-    [/\*\*(.*?)\*\*/g, "b"],
-    [/__(.*?)__/g, "b"],
-    [/(?<!_)_(?!_)(.*?)_(?<!_)(?!_)/g, "i"],
-    [/\*(.*?)\*/g, "i"],
-    [/_(.*?)_/g, "i"],
-    [/```(.*?)```/g, "code"],
-    [/`(.*?)`/g, "pre"],
+  [/`(.*?)`/g, "code"],
 
+  // Generic Code
+  // [/```(.*?)```/g, "code"],
+
+  // Bold+Italic text
+  [/\*\*\*(.*?)\*\*\*/g, "bi"],
+  [/___(.*?)___/g, "bi"],
+  [/\*\*_(.*?)_\*\*/g, "bi"],
+  [/__\*(.*?)\*__/g, "bi"],
+
+  // Bold
+  [/\*\*(.*?)\*\*/g, "b"],
+  [/__(.*?)__/g, "b"],
+
+  // Italic
+  [/(?<!_)_(?!_)(.*?)_(?<!_)(?!_)/g, "i"],
+  [/\*(.*?)\*/g, "i"],
+  [/_(.*?)_/g, "i"]
   ];
+const wrapperMD = {
+  // Text
+  "b": "**",
+  "i": "_",
+  "bi": "***",
+
+  // Code
+  "code": "`",
+
+  // Formatted code
+  "boldcode": "**`",
+  "icode": "_`",
+  "bicode": "***`"
+};
 
   const splitLines = md.split("\n");
-  let html = "";
 
+  let html = "";
+  let lookingForEndingBlock = false
   for (let line of splitLines) {
+	if(line.startsWith("```") && !lookingForEndingBlock){
+	    lookingForEndingBlock = true;
+	    html += '<pre><code>'+line.replace("```", '')
+	    continue;  // skip to next line
+	}
+
+	if(line.startsWith("```") && lookingForEndingBlock){
+	    lookingForEndingBlock = false;
+	    html += '</code></pre>'+line.replace("```", '')
+	    continue;  // skip to next line
+	}
+
+	if(lookingForEndingBlock){
+	    html += line + "\n";  // only append the content inside codeblock
+	    continue;
+	}
     // headings
 		const headingKeys = Object.keys(headings).sort((a,b) => b.length - a.length);
 
 		for (const fmt of headingKeys) {
 		    if (line.startsWith(fmt)) {
-		        line = `<${headings[fmt]}><span class="hiddentag">${fmt}</span>${line.slice(fmt.length).trim()}</${headings[fmt]}>`;
+		        line = `<${headings[fmt]}>${line.slice(fmt.length).trim()}</${headings[fmt]}>`;
 		        break;
 		    }
 		}
+	// handle multiline codeblocks
+	
 
-    // inline formatting
-    for (const [regex, tag] of wrappers) {
-      line = line.replace(regex, `<${tag}>$1</${tag}>`);
-    }
+	if(!lookingForEndingBlock){
+	    // inline formatting
+	    line = line.replace(/\!\[(.*?)\]\((.*?)\)/g, `<img src="$2" alt="$1"><br>`)
+		line = line.replace(/\[(.*?)\]\((.*?)\)/g, `<a href="$2">$1</a><br>`)
+	    for (const [regex, tag] of wrappers) {
+	      line = line.replace(regex, `<${tag}>$1</${tag}>`);
+	    }
+	    if(!line.startsWith("<h") && !line.startsWith("<blockquote")){
+		    html += line + "<br>";
 
-    html += line + "\n";
+	    }
+	   	else{
+		    html += line;
+
+	   	}
+
+	}
+
   }
-
-  return html;
+  return "<para>"+html.replaceAll("\n\n", "</para><para>") + "</para>";
 }
 
-
-function saveCaret(container) {
-    const sel = window.getSelection();
-    if (!sel.rangeCount) return null;
-
-    const range = sel.getRangeAt(0);
-
-    const preSelectionRange = range.cloneRange();
-    preSelectionRange.selectNodeContents(container);
-    preSelectionRange.setEnd(range.startContainer, range.startOffset);
-    const start = preSelectionRange.toString().length;
-
-    return start;
-}
-
-function restoreCaret(container, charIndex) {
-    const range = document.createRange();
-    const sel = window.getSelection();
-
-    let nodeStack = [container], node, found = false;
-    let chars = 0;
-
-    while (nodeStack.length && !found) {
-        node = nodeStack.pop();
-
-        if (node.nodeType === Node.TEXT_NODE) {
-            const nextChars = chars + node.length;
-            if (charIndex <= nextChars) {
-                range.setStart(node, charIndex - chars);
-                range.collapse(true);
-                found = true;
-            } else {
-                chars = nextChars;
-            }
-        } else {
-            let i = node.childNodes.length;
-            while (i--) nodeStack.push(node.childNodes[i]);
-        }
-    }
-
-    if (found) {
-        sel.removeAllRanges();
-        sel.addRange(range);
-    }
-}
-
-// usage
-notemd.addEventListener("input", (e) => {
-   checkFormatting()
-   fixCaret()
-});
-
-// Hook it to input, keydown, and mouse events if needed
-notemd.addEventListener("keydown", () => {
-   checkFormatting()
-   fixCaret()
-});
-document.addEventListener("mousedown", () => {
-   checkFormatting()
-   fixCaret()
-});
-function fixCaret() {
-    const sel = window.getSelection();
-    if (!sel || !sel.focusNode) return;
-
-    const node = sel.focusNode;
-
-    // Only target text nodes that are direct children of the notemd
-    if (node.nodeType === Node.TEXT_NODE && node.parentElement === notemd) {
-        // Remove the text node and put it inside a new div
-        const div = document.createElement("div");
-        div.textContent = node.textContent || "\u200B"; // preserve text or insert zero-width space
-        notemd.replaceChild(div, node);
-
-        // Move caret to the end of the new div
-        const range = document.createRange();
-        range.setStart(div, div.textContent.length);
-        range.collapse(true);
-
-        sel.removeAllRanges();
-        sel.addRange(range);
-    }
-}
-lastFocussedElement = null
-function getFocusedLine() {
-    let sel = window.getSelection();
-    if(!sel || !sel.focusNode) return null;
-
-    let node = sel.focusNode;
-    // climb up until we hit a direct child of #note-md
-    while(node && node.parentElement !== notemd) {
-        node = node.parentElement;
-    }
-    return node;
-}
-
-function checkFormatting() {
-    const focusedLine = getFocusedLine();
-
-    [...notemd.children].forEach(line => {
-        if(line !== focusedLine){
-            line.innerHTML = decodeMd(line.innerText); // render
-        } else {
-            if(lastFocussedElement !== line){
-                line.innerText = line.innerText;
-                lastFocussedElement = line;
-            }
-        }
-    });
-}
-
-
-
-notemd.addEventListener("keydown", (e) => {
-    if (e.key === "Enter") {
-        e.preventDefault();
-
-        const sel = window.getSelection();
-        const range = sel.getRangeAt(0);
-
-        // Get the block element the caret is inside
-        let currentBlock = range.startContainer;
-        if (currentBlock.nodeType === Node.TEXT_NODE) {
-            currentBlock = currentBlock.parentNode;
-        }
-
-        // If the caret is inside something that isn’t a direct child of the contenteditable,
-        // we want the top-level block inside notemd
-        console.log(currentBlock)
-        if(currentBlock !== notemd){
-	        while (currentBlock.parentNode !== notemd) {
-	            currentBlock = currentBlock.parentNode;
-	        }
-	      }
-	      // Create new div
-        const newDiv = document.createElement("div");
-        newDiv.classList.add("line")
-        newDiv.innerHTML = "<br>";
-
-        // Insert as next sibling of the current line
-				const next = currentBlock.nextSibling;
-				if (next && next.parentNode === notemd) {
-				    notemd.insertBefore(newDiv, next);
-				} else {
-				    notemd.appendChild(newDiv);
-				}
-
-
-        // Move caret into new div
-        const newRange = document.createRange();
-        newRange.setStart(newDiv, 0);
-        newRange.collapse(true);
-        sel.removeAllRanges();
-        sel.addRange(newRange);
-    }
-});
 

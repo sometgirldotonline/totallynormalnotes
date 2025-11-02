@@ -1,0 +1,181 @@
+function saveCaret(container) {
+    const sel = window.getSelection();
+    if (!sel.rangeCount) return null;
+
+    const range = sel.getRangeAt(0);
+
+    const preSelectionRange = range.cloneRange();
+    preSelectionRange.selectNodeContents(container);
+    preSelectionRange.setEnd(range.startContainer, range.startOffset);
+    const start = preSelectionRange.toString().length;
+
+    return start;
+}
+
+function restoreCaret(container, charIndex) {
+    const range = document.createRange();
+    const sel = window.getSelection();
+
+    let nodeStack = [container], node, found = false;
+    let chars = 0;
+
+    while (nodeStack.length && !found) {
+        node = nodeStack.pop();
+
+        if (node.nodeType === Node.TEXT_NODE) {
+            const nextChars = chars + node.length;
+            if (charIndex <= nextChars) {
+                range.setStart(node, charIndex - chars);
+                range.collapse(true);
+                found = true;
+            } else {
+                chars = nextChars;
+            }
+        } else {
+            let i = node.childNodes.length;
+            while (i--) nodeStack.push(node.childNodes[i]);
+        }
+    }
+
+    if (found) {
+        sel.removeAllRanges();
+        sel.addRange(range);
+    }
+}
+
+// usage
+notemd.addEventListener("input", (e) => {
+   checkFormatting()
+   fixCaret()
+});
+
+// Hook it to input, keydown, and mouse events if needed
+notemd.addEventListener("keydown", () => {
+   checkFormatting()
+   fixCaret()
+});
+document.addEventListener("mousedown", () => {
+   checkFormatting()
+   fixCaret()
+});
+function fixCaretOld() {
+    const sel = window.getSelection();
+    if (!sel || !sel.focusNode) return;
+
+    const node = sel.focusNode;
+
+    // Only target text nodes that are direct children of the notemd
+    if (node.nodeType === Node.TEXT_NODE && node.parentElement === notemd) {
+        // Remove the text node and put it inside a new div
+        const div = document.createElement("div");
+        div.textContent = node.textContent || "\u200B"; // preserve text or insert zero-width space
+        notemd.replaceChild(div, node);
+
+        // Move caret to the end of the new div
+        const range = document.createRange();
+        range.setStart(div, div.textContent.length);
+        range.collapse(true);
+
+        sel.removeAllRanges();
+        sel.addRange(range);
+    }
+}
+function fixCaret() {
+  const sel = window.getSelection();
+  if (!sel || !sel.focusNode) return;
+  const node = sel.focusNode;
+
+  if (node.nodeType === Node.TEXT_NODE && node.parentElement === notemd) {
+    const text = node.textContent || "";
+    const div = document.createElement("div");
+    div.classList.add("line");
+    div.textContent = text;
+
+    notemd.replaceChild(div, node);
+
+    setTimeout(()=>{
+		// move caret to end of new div
+	    const range = document.createRange();
+		    if(document.querySelector(".line:focus")){
+		    range.selectNodeContents(document.querySelector(".line:focus"));
+		    range.collapse(false); // end
+		    sel.removeAllRanges();
+		    sel.addRange(range);
+		}
+	}, 50)
+  }
+}
+lastFocussedElement = null
+function getFocusedLine() {
+    let sel = window.getSelection();
+    if(!sel || !sel.focusNode) return null;
+
+    let node = sel.focusNode;
+    // climb up until we hit a direct child of #note-md
+    while(node && node.parentElement !== notemd) {
+        node = node.parentElement;
+    }
+    return node;
+}
+
+function checkFormatting() {
+    const focusedLine = getFocusedLine();
+
+    [...notemd.children].forEach(line => {
+        if(line !== focusedLine){
+            line.innerHTML = decodeMd(line.textContent); // render
+        } else {
+            if(lastFocussedElement !== line){
+                line.innerText = line.innerText;
+                lastFocussedElement = line;
+            }
+        }
+    });
+}
+
+
+
+notemd.addEventListener("keydown", (e) => {
+    if (e.key === "Enter") {
+        e.preventDefault();
+
+        const sel = window.getSelection();
+        const range = sel.getRangeAt(0);
+
+        // Get the block element the caret is inside
+        let currentBlock = range.startContainer;
+        if (currentBlock.nodeType === Node.TEXT_NODE) {
+            currentBlock = currentBlock.parentNode;
+        }
+
+        // If the caret is inside something that isn’t a direct child of the contenteditable,
+        // we want the top-level block inside notemd
+        console.log(currentBlock)
+        if(currentBlock !== notemd){
+	        while (currentBlock.parentNode !== notemd) {
+	            currentBlock = currentBlock.parentNode;
+	        }
+	      }
+	      // Create new div
+        const newDiv = document.createElement("div");
+        newDiv.classList.add("line")
+        newDiv.innerHTML = "<br>";
+
+        // Insert as next sibling of the current line
+				const next = currentBlock.nextSibling;
+				if (next && next.parentNode === notemd) {
+				    notemd.insertBefore(newDiv, next);
+				} else {
+				    notemd.appendChild(newDiv);
+				}
+
+
+        // Move caret into new div
+        const newRange = document.createRange();
+        newRange.setStart(newDiv, 0);
+        newRange.collapse(true);
+        sel.removeAllRanges();
+        sel.addRange(newRange);
+    }
+});
+
