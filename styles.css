@@ -1,5 +1,6 @@
 body{
 	margin:0px;
+	overflow: hidden;
 }
 .splash, .orisit{
 	background: linear-gradient(rgba(150,100,70), rgba(150,150,130));
@@ -12,7 +13,6 @@ body{
 	flex-direction: column;
 	align-items: center;
 	justify-content: center;
-	transition: opacity ease-in-out 0.2s;
 	vertical-align: center;
 }
 .splash button{
@@ -30,7 +30,9 @@ button{
 	background: rgba(255,255,255,0.5);
 	backdrop-filter: blur(10px);
 }
-
+button:hover{
+		background: rgba(255,255,255,0.8);
+}
 .orisit{
 
 }
@@ -48,13 +50,13 @@ button{
 
 }
 .splash{
-	z-index: 999999;
+	z-index: 2;
 }
 .orisit{
-	z-index: 999998;
+	z-index: 1;
 }
 .app{
-	z-index: 999997;
+	z-index: 3;
 }
 .app{
 	background: linear-gradient(rgba(150,100,70), rgba(150,150,130));
@@ -67,4 +69,69 @@ button{
 *:not(button){
 	color:white;
 	font-family:system-ui;
+}
+
+.app{
+	display:flex;
+	width:100vw;
+	section.noteslist {
+	    width:14vw;
+	    height:100vh;
+		display:flex;
+		flex-direction:column;
+	}
+	section.writer{
+		width: 100%;
+		height: 100vh;
+		display:flex;
+		flex-direction: column;
+		& textarea#note-plaintext{
+			width:100%;
+			height:100%;
+			background: rgba(0,0,0,0.5);
+	    	font-size: 1.3em;
+		}
+		& #note-title{
+			background: rgba(0,0,0,0.5);
+			font-size:1.5em;
+			border:0px;
+		}
+	}
+	.noteslist select{
+		height:100%;
+	    background: rgba(0,0,0,0.5);
+	    font-size: 1.3em;
+	    outline:none;
+	    border:none;
+	}
+	.noteslist select [disabled]{
+	    font-weight:bold;
+	}
+	.noteslist button{
+		border-radius: 0 !important;
+		border: 0px;
+		vertical-align: middle;
+	}
+	.noteslist select option:checked, .noteslist select option:focus{
+		background: rgba(0,0,0,0.5);
+		color: rgb(230,230,255);
+	}
+}
+
+.fa-solid{
+	color:inherit;
+}
+
+*{
+	transition: all ease-in-out 0.1s;
+
+}
+video.jumpvid {
+    position:absolute;
+    top:0px;
+    left:0px;
+    width:100vw;
+    height:100vh;
+    object-fit:fill;
+    pointer-events: none;
 }
