@@ -174,12 +174,12 @@ var db = new Dexie("totallynormalnotesDB")
 db.version(1).stores({notes:"++id,title,content,createdate,tags,path"})
 
 async function shownote(id){
-	try{
-		document.querySelector(".noteslist #notes").value=String(id)
-	}
-	catch(e){
-		console.error(e)
-	}
+	// try{
+	// 	document.querySelector(".noteslist #notes").value=String(id)
+	// }
+	// catch(e){
+	// 	console.error(e)
+	// }
 	title = document.querySelector("#note-title")
 	tags = document.querySelector("#note-tags")
 	path = document.querySelector("#note-path")
@@ -400,7 +400,9 @@ async function searchNotes(query){
 	try{
 		shownote(result[0].id)
 		console.log(result)
-		listnotes(result)
+		document.querySelector(".notetree").innerHTML = ""
+		recurseAndBuild((await buildNoteTree(result)), document.querySelector(".notetree"))
+		
 
 	}
 	catch{	}
