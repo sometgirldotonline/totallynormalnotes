@@ -20,3 +20,32 @@ Your queries are executed like this:
 result = eval(`notes.filter(i=>(`+query+"))")
 ```
 For JS queries you must press enter to execute
+
+# Markdown Testing
+Use this to test the parser.
+If you press two newlines consecutively it makes a new paragraph.
+```md
+# Markdown Test
+## Heading Two
+### Heading Three
+#### Heading Four
+##### Heading Five
+###### Heading Six
+*italic* **bold** _italic_ __bold__
+> Blockquote 
+`inline code`
+```
+codeblock
+```
+***italic bold***
+___italic bold___
+*`code`*
+**`code`**
+***`test`***
+___`test`___
+
+![Test of Image](https://files.novafurry.win/1.%20Images/PleaseCarefullyExamineTheKDE%20%f0%9f%91%8d/PleaseCarefullyExamineTheKDE%20%f0%9f%91%8d.png)
+[google.com](http://google.com)
+```
+
+totally normal notes is made with pride & gayness 🏳️‍⚧️ 🏳️‍🌈
