@@ -15,12 +15,22 @@
     </div>
     <div class="app" style="opacity: 0">
         <section class="noteslist">
-            <select name="notes" id="notes" size=6 onclick="shownote(Number(document.querySelector('#notes option:checked').value))">
+            <input type="search" placeholder="🔎 Search your notes" id="search">
+ <!--            <select name="notes" id="notes" size=6 onclick="shownote(Number(document.querySelector('#notes option:checked').value))">
               <option disabled>Notes</option>
-            </select>
+            </select> -->
+            <div class="notetree">
+            </div>
             <button onclick="addnote()"><i class="fa-solid fa-plus"></i> Add Note</button>
         </section>
-        <section class="writer"><input id="note-title" type=text>
+        <section class="writer"><div class="top-line">
+            <div class="input-wrapper">Title<br>
+            <input id="note-title" type=text placeholder="Title"></div>
+            <div class="input-wrapper">Tags<br>
+            <input id="note-tags" type=text placeholder="Comma-separated tags"></div>
+            <!-- <button>Pick Folder</button> -->
+            <div class="input-wrapper">Path<br>
+            <input id="note-path" type=text placeholder="File Path"></div></div>
             <div class="split-editor">
             <div id="note-md">
             </div>

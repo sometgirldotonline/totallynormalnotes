@@ -25,10 +25,16 @@ body{
 
 button{
 	padding: 10px;
-	border-radius:100px;
+	border-radius:5px;
 	font-family:system-ui;
+	outline: 0px;
+	border:0px;
 	background: rgba(255,255,255,0.5);
 	backdrop-filter: blur(10px);
+}
+.top-line button{
+	border-radius: 0px;
+	width: fit-content;
 }
 button:hover{
 		background: rgba(255,255,255,0.8);
@@ -82,6 +88,8 @@ button:hover{
 	    height:100vh;
 		display:flex;
 		flex-direction:column;
+		overflow: auto;
+        resize: horizontal;
 	}
 	section.writer{
 		width: 100%;
@@ -96,10 +104,21 @@ button:hover{
 			background: rgba(0,0,0,0.5);
 	    	font-size: 1.3em;
 		}
-		& #note-title{
-			background: rgba(0,0,0,0.5);
+		& .top-line input{
+			background: rgba(0,0,0,0);
 			font-size:1.5em;
 			border:0px;
+			width: 100%;
+		}
+		& .top-line .input-wrapper{
+			background: rgba(0,0,0,0.5);
+			width:100%;
+		}
+		& .top-line button{
+			width: fit-content !important;
+		}
+		& .top-line{
+			display: flex;
 		}
 	}
 	.noteslist select{
@@ -111,6 +130,16 @@ button:hover{
 	}
 	.noteslist select [disabled]{
 	    font-weight:bold;
+	}
+	.notetree{
+		height:100%;
+	    background: rgba(0,0,0,0.5);
+	    outline:none;
+	    border:none;
+	}
+	.notetree *{
+		color: white;
+		font-size: 12pt;
 	}
 	.noteslist button{
 		border-radius: 0 !important;
@@ -209,3 +238,65 @@ pre:has(code) > code, pre:has(code){
   	position: relative;
   	left: -40px;
   }
+  input[type=search]{
+  	color: black;
+  }
+  .notetree > details {
+  	margin-left: 0px !important;
+}
+.notetree details details, .notetree details button{
+}
+.notetree button{
+    width:100%;
+    background: transparent;
+    text-align:left;
+    border-left: 4px solid rgba(255,255,255) !important;
+    display:block;
+    margin-left: -4px;
+    
+    
+    
+    
+    &:before{
+        content:'📝 '
+    }
+    &:hover{
+        background: rgba(0,0,0,0.2)
+    }
+}
+.notetree > details button{
+    padding-left: 15px;
+}
+.notetree details summary::marker{
+    content: '📁 '
+}
+
+.notetree details:open summary::marker{
+    content: '📂 '
+}
+
+.notetree details{
+    margin-bottom:3px;
+    border-left: 4px solid rgba(255,255,255) !important;
+    display:block;
+    margin-left: -4px;
+    padding-left: 4px;
+    
+}
+.notetree summary{
+    padding: 10px;
+    &:hover{
+        background: rgba(0,0,0,0.2)
+    }
+}
+input#search {
+    background: rgba(0,0,0,0.5);
+    border:0px;
+    font-size: 12pt;
+    padding-top:5px;
+    padding-bottom:5px;
+    color: white
+}label {
+    position:absolute;
+    font-size:0.9em;
+}

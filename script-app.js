@@ -99,11 +99,79 @@ function randomReplace(char, useRandomShift=false){
 	}
 	return ret
 }
+async function buildNoteTree(notes = null) {
+    if (!notes) {
+        notes = await db.notes.toArray();
+    }
+
+    const tree = [];
+
+    notes.forEach(note => {
+        let current = tree;
+
+        // If no path, just push to root
+        if (!note.path || note.path.length === 0 || (note.path.length === 1 && note.path[0] === "")) {
+            current.push(note);
+        } else {
+            // Traverse path
+            note.path.forEach((segment, i) => {
+                // Look for existing folder
+                let folder = current.find(obj => obj.title === segment && obj.type === "folder");
+
+                if (!folder) {
+                    folder = { title: segment, folder: [], type: "folder" };
+                    current.push(folder);
+                }
+
+                // If last segment, push the note
+                if (i === note.path.length - 1) {
+                    note.type = "file";
+                    folder.folder.push(note);
+                }
+
+                // Move current into this folder's array for next iteration
+                current = folder.folder;
+            });
+        }
+    });
+
+    return tree;
+}
+
+function recurseAndBuild(items, container) {
+	console.log(items)
+	items.forEach((item, idx) => {
+	    console.log(idx, item.type, Array.isArray(item.folder));
+	});
+    items.forEach(item => {
+
+        if (item.type === "file" || item.type == undefined) {
+        	console.log("Adding file: ", item.path, item.title)
+            const but = document.createElement("button");
+            but.innerText = item.title;
+            but.onclick = () =>{shownote(item.id)}
+            container.appendChild(but);
+        } else if (item.type === "folder") {
+            const folder = document.createElement("details");
+            const path = document.createElement("summary");
+            path.innerText = item.title;
+            folder.appendChild(path);
+
+            const innerContainer = document.createElement("div"); // container for children
+            folder.appendChild(innerContainer);
+
+            recurseAndBuild(item.folder, innerContainer); // recurse into innerContainer
+
+            container.appendChild(folder);
+        }
+    });
+    return container;
+}
 
 
 var db = new Dexie("totallynormalnotesDB")
 
-db.version(1).stores({notes:"++id,title,content,createdate"})
+db.version(1).stores({notes:"++id,title,content,createdate,tags,path"})
 
 async function shownote(id){
 	try{
@@ -113,9 +181,13 @@ async function shownote(id){
 		console.error(e)
 	}
 	title = document.querySelector("#note-title")
+	tags = document.querySelector("#note-tags")
+	path = document.querySelector("#note-path")
 	note = await db.notes.get(id)
 	noteplain.value = note.content || ""
 	title.value = note.title || "Untitled Note"
+	tags.value = (note.tags || []).join(", ") || ""
+	path.value = (note.path || []).join("/") || ""
 	noteplain.readOnly = false
 	document.title = `Notes - ${note.title}`
 	window.location.hash = id
@@ -138,26 +210,38 @@ async function shownote(id){
 
 	}
 	title.onkeyup = () => {db.notes.update(id, {title: document.querySelector("#note-title").value})}
+	tags.onkeyup = () => {db.notes.update(id, {tags: document.querySelector("#note-tags").value.split(", ")})}
+	path.onkeyup = () => {db.notes.update(id, {path: document.querySelector("#note-path").value.split("/")})}
 }
 
 async function addnote(title = "Untitled Note"){
-	const id = await db.notes.add({title: title, content: "# Test of Note.\n", createdate: Date.now()})
+	const id = await db.notes.add({title: title, content: "# Test of Note.\n", createdate: Date.now(), tags: [], path:[]})
 	shownote(id)
 	return id
 }
 
-async function listnotes(){
-	const notes = await db.notes.toArray()
+async function listnotes(notes = null){
+	if(notes == null){
+		notes = await db.notes.toArray()
+	}
 	const picker = document.querySelector("#notes")
 	picker.innerHTML = `
               <option disabled>Notes</option>
 		${notes.map(n=>`<option value="${n.id}">${n.title}</option>`).join('')}`
 }
-Dexie.on('storagemutated', changes => {
-  listnotes();
+Dexie.on('storagemutated', async changes => {
+  // listnotes();
+	document.querySelector(".notetree").innerHTML = ""
+	recurseAndBuild((await buildNoteTree()), document.querySelector(".notetree"))
 });
 
-listnotes()
+async function init() {
+    document.querySelector(".notetree").innerHTML = "";
+    const tree = await buildNoteTree();
+    recurseAndBuild(tree, document.querySelector(".notetree"));
+}
+
+init();
 
 if(window.location.hash !== null){
 	shownote(Number(window.location.hash.replace("#","")))
@@ -292,5 +376,42 @@ const wrapperMD = {
   }
   return "<para>"+html.replaceAll("\n\n", "</para><para>") + "</para>";
 }
+
+
+async function searchNotes(query){
+	if(query.startsWith(":js:")){
+		query = query.replace(":js:","")
+		if(query.trim() == ""){
+			return
+		}
+		notes = await db.notes.toArray()
+		try{
+			result = eval(`notes.filter(i=>(`+query+"))")
+
+		}
+		catch(e){
+			alert("Error in query: "+e)
+			return
+		}
+	}
+	else{
+		result = await db.notes.filter(item => (item.title.toLowerCase().includes(query.toLowerCase()) || item.content.toLowerCase().includes(query.toLowerCase()))).toArray();
+	}
+	try{
+		shownote(result[0].id)
+		console.log(result)
+		listnotes(result)
+
+	}
+	catch{	}
+}
+document.querySelector("#search").addEventListener("keyup", (ev)=>{
+	if(ev.key == "Enter" && document.querySelector("#search").value.startsWith(":js:")){
+		searchNotes(document.querySelector("#search").value)
+	}
+	else if(!document.querySelector("#search").value.startsWith(":js:")){
+		searchNotes(document.querySelector("#search").value)
+	}
+})
 
 
