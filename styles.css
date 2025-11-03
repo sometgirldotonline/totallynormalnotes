@@ -77,8 +77,8 @@ button:hover{
 	font-family:system-ui;
 }
 	.split-editor  {
-		max-height: calc(100% - 5ch) !important;
-		height: calc(100% - 5ch) !important;
+		max-height: calc(100% - 7ch) !important;
+		height: calc(100% - 7ch) !important;
 	}
 .app{
 	display:flex;
